@@ -1,20 +1,22 @@
 const { Coupon } = require("../models/coupon");
-const { getPercentage } = require("../utils/getPercentage");
+const getPercentage = require("../utils/getPercentage");
 
 module.exports.create = async (req, res) => {
   console.log("Create Coupon Controller Invoked");
 
   let body = req.body;
-
-  const couponCheck = await Coupon.findOne({
-    couponCode: body.couponCode,
-  });
-
-  // To check if couponCode exists or not
-  if (couponCheck) {
-    return res.status(400).send({
-      eror: `Coupon already exists with this coupon name ${body.couponCode}`,
+  try {
+    const couponCheck = await Coupon.findOne({
+      couponCode: body.couponCode,
     });
+    // To check if couponCode exists or not
+    if (couponCheck) {
+      return res.status(400).send({
+        eror: `Coupon already exists with this coupon name ${body.couponCode}`,
+      });
+    }
+  } catch (err) {
+    console.log(err);
   }
 
   //* Create a new Coupon
@@ -43,31 +45,50 @@ module.exports.show = async (req, res, next) => {
 };
 
 module.exports.verifyCoupon = async (req, res, next) => {
-  console.log("Invoked  verify coupon Controller");
+  console.log("Invoked  verify coupon controller");
 
-  const { code, amount } = req.query;
-
+  const { code, totalamount } = req.query;
+  let amount = Number(totalamount);
   try {
     // To find coupon by couponCode
     const coupon = await Coupon.findOne({ couponCode: code });
 
     if (coupon.category === "flat") {
-      let discountedAmount = amount - coupon.discountValue;
-      res.status(200).send({ message: discountedAmount });
+      let totalAmountToBeDiscounted = amount - coupon.discountValue;
+      res
+        .status(200)
+        .send({
+          discountedAmount: totalAmountToBeDiscounted,
+          amount,
+          category: coupon.category,
+          discountValue: coupon.discountValue,
+        });
     } else {
       let totalAmountToBeDiscounted = getPercentage(
         amount,
         coupon.discountValue
       );
-      let discountedAmount = amount - totalAmountToBeDiscounted;
 
-      // check if discountedAmount is less than or equals to maxDiscountAmount
-      if (discountedAmount <= coupon.maxDiscountAmount) {
-        res.status(200).send({ message: discountedAmount });
+      let discountedAmountValue = amount - totalAmountToBeDiscounted;
+
+      // check if discountedAmountValue is less than or equals to maxDiscountAmount
+      if (discountedAmountValue <= coupon.maxDiscountAmount) {
+        console.log(discountedAmountValue, "discountedAmountValue");
+        res.status(200).send({
+          discountedAmount: totalAmountToBeDiscounted,
+          amount,
+          category: coupon.category,
+          discountValue: coupon.discountValue,
+        });
       } else {
         // if discountedAmount is more than maxDiscountAmount
-        let discountedAmount = amount - coupon.maxDiscountAmount;
-        res.status(200).send({ message: discountedAmount });
+        let totalAmountToBeDiscounted = amount - coupon.maxDiscountAmount;
+        res.status(200).send({
+          discountedAmount: totalAmountToBeDiscounted,
+          amount,
+          category: coupon.category,
+          discountValue: coupon.discountValue,
+        });
       }
     }
   } catch (err) {

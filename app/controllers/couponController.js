@@ -5,14 +5,15 @@ module.exports.create = async (req, res) => {
   console.log("Create Coupon Controller Invoked");
 
   let body = req.body;
+  console.log(body);
   try {
     const couponCheck = await Coupon.findOne({
       couponCode: body.couponCode,
     });
     // To check if couponCode exists or not
     if (couponCheck) {
-      return res.status(400).send({
-        eror: `Coupon already exists with this coupon name ${body.couponCode}`,
+      return res.status(400).json({
+        error: `Coupon already exists with this coupon name ${body.couponCode}`,
       });
     }
   } catch (err) {
@@ -26,9 +27,9 @@ module.exports.create = async (req, res) => {
   });
   try {
     await coupon.save();
-    res.status(201).send(coupon);
+    res.status(201).json(coupon);
   } catch (err) {
-    res.status(400).send(err);
+    res.status(400).json(err);
   }
 };
 
@@ -38,9 +39,9 @@ module.exports.show = async (req, res, next) => {
   //* Get all coupon
   try {
     const coupon = await Coupon.find();
-    res.status(200).send(coupon);
+    res.status(200).json(coupon);
   } catch (err) {
-    res.status(500).send(err);
+    res.status(500).json(err);
   }
 };
 
@@ -55,14 +56,14 @@ module.exports.verifyCoupon = async (req, res, next) => {
 
     if (coupon.category === "flat") {
       let totalAmountToBeDiscounted = amount - coupon.discountValue;
-      res
-        .status(200)
-        .send({
-          discountedAmount: totalAmountToBeDiscounted,
-          amount,
-          category: coupon.category,
-          discountValue: coupon.discountValue,
-        });
+      res.status(200).json({
+        totalAmountToBeDiscounted,
+        discountedAmount: coupon.discountValue,
+        amount,
+        couponCode: coupon.couponCode,
+        category: coupon.category,
+        discountValue: coupon.discountValue,
+      });
     } else {
       let totalAmountToBeDiscounted = getPercentage(
         amount,
@@ -73,25 +74,28 @@ module.exports.verifyCoupon = async (req, res, next) => {
 
       // check if discountedAmountValue is less than or equals to maxDiscountAmount
       if (discountedAmountValue <= coupon.maxDiscountAmount) {
-        console.log(discountedAmountValue, "discountedAmountValue");
-        res.status(200).send({
-          discountedAmount: totalAmountToBeDiscounted,
+        res.status(200).json({
+          totalAmountToBeDiscounted,
+          discountedAmount: Math.floor(discountedAmountValue * 10) / 10,
           amount,
+          couponCode: coupon.couponCode,
           category: coupon.category,
           discountValue: coupon.discountValue,
         });
       } else {
         // if discountedAmount is more than maxDiscountAmount
         let totalAmountToBeDiscounted = amount - coupon.maxDiscountAmount;
-        res.status(200).send({
-          discountedAmount: totalAmountToBeDiscounted,
+        res.status(200).json({
+          totalAmountToBeDiscounted,
+          discountedAmount: coupon.maxDiscountAmount,
           amount,
+          couponCode: coupon.couponCode,
           category: coupon.category,
           discountValue: coupon.discountValue,
         });
       }
     }
   } catch (err) {
-    res.status(500).send(err);
+    res.status(500).json(err);
   }
 };

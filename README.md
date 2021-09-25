@@ -12,7 +12,7 @@ $ npm i
 ```terminal
 package.json
 .env (to create .env, and add MONGODB_URI)
-client/
+coupon-code-validator-fe/
    package.json
 ...
 ```
